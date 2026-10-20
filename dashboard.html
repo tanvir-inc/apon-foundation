@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>My dashboard · APON Foundation</title>
+  <link rel="stylesheet" href="auth.css">
+</head>
+<body>
+  <header class="top">
+    <a class="brand" href="index.html">APON Foundation</a>
+    <div class="who"><span id="who"></span><button id="logout">Log out</button></div>
+  </header>
+  <main hidden id="app">
+    <h1 id="hello"></h1>
+    <p class="muted">This is your member dashboard.</p>
+    <div class="grid">
+      <div class="panel"><div class="muted">Email</div><div id="email"></div></div>
+      <div class="panel"><div class="muted">Role</div><span class="badge" id="role"></span></div>
+      <div class="panel"><div class="muted">Member since</div><div id="since"></div></div>
+    </div>
+    <div class="panel" style="max-width:420px">
+      <h2 style="margin-top:0;font-size:1.1rem">Edit profile</h2>
+      <form id="profile">
+        <label for="name">Name</label>
+        <input id="name" name="name" required>
+        <p class="msg" role="status"></p>
+        <button class="primary" type="submit">Save changes</button>
+      </form>
+    </div>
+  </main>
+  <script src="auth.js"></script>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    function render(u) {
+      $('hello').textContent = 'Hello, ' + u.name;
+      $('who').textContent = u.email;
+      $('email').textContent = u.email;
+      $('role').textContent = u.role;
+      $('since').textContent = fmtDate(u.created_at);
+      $('name').value = u.name;
+    }
+    guard().then((u) => { if (!u) return; render(u); $('app').hidden = false; });
+    $('logout').onclick = logout;
+    $('profile').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const msg = e.target.querySelector('.msg');
+      try {
+        const { user } = await api('/auth/me', { method: 'PATCH', body: { name: $('name').value } });
+        render(user); msg.className = 'msg ok'; msg.textContent = 'Saved.';
+      } catch (err) { msg.className = 'msg'; msg.textContent = err.message; }
+    });
+  </script>
+</body>
+</html>

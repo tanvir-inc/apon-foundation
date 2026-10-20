@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin · APON Foundation</title>
+  <link rel="stylesheet" href="auth.css">
+</head>
+<body>
+  <header class="top">
+    <a class="brand" href="index.html">APON Foundation · Admin</a>
+    <div class="who"><span id="who"></span><button id="logout">Log out</button></div>
+  </header>
+  <main hidden id="app">
+    <h1>Admin dashboard</h1>
+    <div class="grid">
+      <div class="panel"><div class="muted">Total accounts</div><div class="stat" id="s-total">0</div></div>
+      <div class="panel"><div class="muted">Admins</div><div class="stat" id="s-admin">0</div></div>
+      <div class="panel"><div class="muted">Members</div><div class="stat" id="s-user">0</div></div>
+    </div>
+
+    <section class="panel">
+      <h2 style="margin-top:0;font-size:1.1rem">Create account</h2>
+      <form id="create">
+        <div class="form-row">
+          <div><label for="c-name">Name</label><input id="c-name" name="name" required></div>
+          <div><label for="c-email">Email</label><input id="c-email" name="email" type="email" required></div>
+          <div><label for="c-pass">Password</label><input id="c-pass" name="password" type="password" minlength="8" required></div>
+          <div><label for="c-role">Role</label><select id="c-role" name="role"><option>user</option><option>admin</option></select></div>
+          <button class="primary" style="margin:0" type="submit">Create account</button>
+        </div>
+        <p class="msg" role="status"></p>
+      </form>
+    </section>
+
+    <section class="panel">
+      <h2 style="margin-top:0;font-size:1.1rem">All accounts</h2>
+      <p class="msg" id="list-msg" role="alert"></p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Sign-in</th><th>Joined</th><th>Actions</th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+  <script src="auth.js"></script>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    let meId;
+
+    async function load() {
+      try {
+        const { users, meId: id } = await api('/admin/users');
+        meId = id;
+        $('s-total').textContent = users.length;
+        $('s-admin').textContent = users.filter((u) => u.role === 'admin').length;
+        $('s-user').textContent = users.filter((u) => u.role === 'user').length;
+        $('rows').innerHTML = users.map((u) => {
+          const self = u.id === meId;
+          const methods = [u.has_password && 'Password', u.has_google && 'Google'].filter(Boolean).join(', ');
+          return `<tr data-id="${u.id}" data-name="${esc(u.name)}">
+            <td>${esc(u.name)}${self ? ' <span class="muted">(you)</span>' : ''}</td>
+            <td>${esc(u.email)}</td>
+            <td><select data-act="role" ${self ? 'disabled' : ''}>
+              ${['user', 'admin'].map((r) => `<option ${r === u.role ? 'selected' : ''}>${r}</option>`).join('')}
+            </select></td>
+            <td>${methods}</td>
+            <td>${fmtDate(u.created_at)}</td>
+            <td><div class="row-actions">
+              <button data-act="rename">Rename</button>
+              <button data-act="password">Reset password</button>
+              <button data-act="delete" class="danger" ${self ? 'disabled' : ''}>Delete</button>
+            </div></td></tr>`;
+        }).join('');
+      } catch (err) { $('list-msg').textContent = err.message; }
+    }
+
+    async function run(fn) {
+      $('list-msg').textContent = '';
+      try { await fn(); await load(); } catch (err) { $('list-msg').textContent = err.message; load(); }
+    }
+
+    $('rows').addEventListener('click', (e) => {
+      const act = e.target.dataset.act, tr = e.target.closest('tr');
+      if (!act || act === 'role') return;
+      const id = Number(tr.dataset.id);
+      if (act === 'rename') {
+        const name = prompt('New name', tr.dataset.name);
+        if (name && name.trim()) run(() => api('/admin/users', { method: 'PATCH', body: { id, name } }));
+      } else if (act === 'password') {
+        const password = prompt('New password (8+ characters)');
+        if (password) run(() => api('/admin/users', { method: 'PATCH', body: { id, password } }));
+      } else if (act === 'delete') {
+        if (confirm('Delete this account? This cannot be undone.')) run(() => api('/admin/users?id=' + id, { method: 'DELETE' }));
+      }
+    });
+
+    $('rows').addEventListener('change', (e) => {
+      if (e.target.dataset.act !== 'role') return;
+      const id = Number(e.target.closest('tr').dataset.id);
+      run(() => api('/admin/users', { method: 'PATCH', body: { id, role: e.target.value } }));
+    });
+
+    $('create').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const msg = e.target.querySelector('.msg');
+      try {
+        await api('/admin/users', { method: 'POST', body: Object.fromEntries(new FormData(e.target)) });
+        e.target.reset(); msg.className = 'msg ok'; msg.textContent = 'Account created.'; load();
+      } catch (err) { msg.className = 'msg'; msg.textContent = err.message; }
+    });
+
+    $('logout').onclick = logout;
+    guard('admin').then((u) => { if (!u) return; $('who').textContent = u.email; $('app').hidden = false; load(); });
+  </script>
+</body>
+</html>
