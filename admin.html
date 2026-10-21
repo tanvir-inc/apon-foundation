@@ -10,7 +10,11 @@
 <body>
   <header class="top">
     <a class="brand" href="index.html">APON Foundation · Admin</a>
-<nav><a href="admin.html" aria-current="page">Accounts</a><a href="admin-pages.html">Pages</a></nav>
+<nav>
+  <a href="admin.html" aria-current="page">Accounts</a>
+  <a href="admin-pages.html">Pages</a>
+  <a href="admin-messages.html">Messages <span class="count" id="msg-badge" hidden></span></a>
+</nav>
     <div class="who"><span id="who"></span><button id="logout">Log out</button></div>
   </header>
   <main hidden id="app">
@@ -19,6 +23,7 @@
       <div class="panel"><div class="muted">Total accounts</div><div class="stat" id="s-total">0</div></div>
       <div class="panel"><div class="muted">Admins</div><div class="stat" id="s-admin">0</div></div>
       <div class="panel"><div class="muted">Members</div><div class="stat" id="s-user">0</div></div>
+      <a class="panel" href="admin-messages.html" style="text-decoration:none;color:inherit"><div class="muted">Unread messages</div><div class="stat" id="s-msg">0</div></a>
     </div>
 
     <section class="panel">
