@@ -19,3 +19,27 @@ CREATE TABLE IF NOT EXISTS pages (
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+ALTER TABLE pages ADD COLUMN IF NOT EXISTS meta_description TEXT NOT NULL DEFAULT '';
+ALTER TABLE pages ADD COLUMN IF NOT EXISTS cover_image      TEXT NOT NULL DEFAULT '';
+ALTER TABLE pages ADD COLUMN IF NOT EXISTS nav_order        INTEGER NOT NULL DEFAULT 0;
+
+CREATE TABLE IF NOT EXISTS media (
+  id         SERIAL PRIMARY KEY,
+  filename   TEXT NOT NULL,
+  mime       TEXT NOT NULL,
+  data       TEXT NOT NULL,              -- base64
+  size       INTEGER NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS messages (
+  id         SERIAL PRIMARY KEY,
+  name       TEXT NOT NULL,
+  email      TEXT NOT NULL,
+  subject    TEXT NOT NULL DEFAULT '',
+  message    TEXT NOT NULL,
+  is_read    BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS messages_created ON messages (created_at DESC);
