@@ -32,14 +32,3 @@ CREATE TABLE IF NOT EXISTS media (
   size       INTEGER NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-
-CREATE TABLE IF NOT EXISTS messages (
-  id         SERIAL PRIMARY KEY,
-  name       TEXT NOT NULL,
-  email      TEXT NOT NULL,
-  subject    TEXT NOT NULL DEFAULT '',
-  message    TEXT NOT NULL,
-  is_read    BOOLEAN NOT NULL DEFAULT false,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-CREATE INDEX IF NOT EXISTS messages_created ON messages (created_at DESC);
