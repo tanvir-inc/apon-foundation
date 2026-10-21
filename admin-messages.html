@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Messages · Admin · APON Foundation</title>
+  <link rel="stylesheet" href="auth.css">
+</head>
+<body>
+  <header class="top">
+    <a class="brand" href="index.html">APON Foundation · Admin</a>
+    <nav>
+      <a href="admin.html">Accounts</a>
+      <a href="admin-pages.html">Pages</a>
+      <a href="admin-messages.html" aria-current="page">Messages <span class="count" id="msg-badge" hidden></span></a>
+    </nav>
+    <div class="who"><span id="who"></span><button id="logout">Log out</button></div>
+  </header>
+  <main hidden id="app">
+    <div class="page-head">
+      <h1>Messages</h1>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+        <div class="chips" id="chips">
+          <button class="chip" data-f="all" aria-pressed="true">All</button>
+          <button class="chip" data-f="unread" aria-pressed="false">Unread</button>
+        </div>
+        <button id="read-all">Mark all as read</button>
+      </div>
+    </div>
+    <p class="msg" id="err" role="alert"></p>
+    <div class="inbox" style="margin-top:1rem">
+      <div class="panel msg-list" style="padding:0" id="list"></div>
+      <div class="panel" id="detail"><p class="muted">Select a message to read it.</p></div>
+    </div>
+  </main>
+  <script src="auth.js"></script>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    let msgs = [], selected = null, filter = 'all', refreshBadge = () => {};
+    const when = (d) => new Date(d).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+
+    function renderList() {
+      const items = msgs.filter((m) => filter === 'all' || !m.is_read);
+      $('list').innerHTML = items.length ? items.map((m) => `
+        <button class="msg-item ${m.is_read ? '' : 'unread'}" data-id="${m.id}" aria-current="${m.id === selected}">
+          <div class="from">${m.is_read ? '' : '<span class="dot"></span>'}${esc(m.name)}</div>
+          <div>${esc(m.subject || '(no subject)')}</div>
+          <div class="muted" style="font-size:.85rem">${esc(m.message.slice(0, 70))} · ${when(m.created_at)}</div>
+        </button>`).join('') : '<p class="muted" style="padding:1rem">' + (filter === 'unread' ? 'No unread messages.' : 'No messages yet.') + '</p>';
+    }
+
+    function renderDetail() {
+      const m = msgs.find((x) => x.id === selected);
+      if (!m) { $('detail').innerHTML = '<p class="muted">Select a message to read it.</p>'; return; }
+      $('detail').innerHTML = `
+        <h2 style="margin:0 0 .25rem;font-size:1.2rem">${esc(m.subject || '(no subject)')}</h2>
+        <div class="muted">From ${esc(m.name)} &lt;${esc(m.email)}&gt; · ${when(m.created_at)}</div>
+        <div class="msg-body">${esc(m.message)}</div>
+        <div class="row-actions">
+          <a class="solid" style="padding:.45rem .9rem;border-radius:8px;text-decoration:none;font-weight:600;background:var(--accent);color:var(--accent-ink)"
+             href="mailto:${encodeURIComponent(m.email)}?subject=${encodeURIComponent('Re: ' + (m.subject || 'Your message to APON Foundation'))}">Reply by email</a>
+          <button data-act="toggle">${m.is_read ? 'Mark as unread' : 'Mark as read'}</button>
+          <button data-act="delete" class="danger">Delete</button>
+        </div>`;
+    }
+
+    async function load() {
+      try { msgs = (await api('/admin/messages')).messages; renderList(); renderDetail(); }
+      catch (err) { $('err').textContent = err.message; }
+    }
+
+    async function setRead(m, is_read) {
+      m.is_read = is_read;
+      await api('/admin/messages', { method: 'PATCH', body: { id: m.id, is_read } });
+      renderList(); renderDetail(); refreshBadge();
+    }
+
+    $('list').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-id]'); if (!b) return;
+      selected = Number(b.dataset.id);
+      const m = msgs.find((x) => x.id === selected);
+      renderList(); renderDetail();
+      if (m && !m.is_read) setRead(m, true).catch((err) => ($('err').textContent = err.message));
+    });
+
+    $('detail').addEventListener('click', async (e) => {
+      const act = e.target.dataset.act; if (!act) return;
+      const m = msgs.find((x) => x.id === selected); if (!m) return;
+      try {
+        if (act === 'toggle') await setRead(m, !m.is_read);
+        if (act === 'delete' && confirm('Delete this message? This cannot be undone.')) {
+          await api('/admin/messages?id=' + m.id, { method: 'DELETE' });
+          msgs = msgs.filter((x) => x.id !== m.id); selected = null; renderList(); renderDetail(); refreshBadge();
+        }
+      } catch (err) { $('err').textContent = err.message; }
+    });
+
+    $('chips').addEventListener('click', (e) => {
+      const f = e.target.dataset.f; if (!f) return;
+      filter = f;
+      document.querySelectorAll('#chips .chip').forEach((c) => c.setAttribute('aria-pressed', c.dataset.f === f));
+      renderList();
+    });
+
+    $('read-all').onclick = async () => {
+      try { await api('/admin/messages', { method: 'PATCH', body: { all: true } }); msgs.forEach((m) => (m.is_read = true)); renderList(); renderDetail(); refreshBadge(); }
+      catch (err) { $('err').textContent = err.message; }
+    };
+
+    $('logout').onclick = logout;
+    guard('admin').then((u) => {
+      if (!u) return;
+      $('who').textContent = u.email; $('app').hidden = false;
+      refreshBadge = watchUnread();
+      load().then(() => {
+        const id = Number(location.hash.slice(1));
+        if (id && msgs.some((m) => m.id === id)) $('list').querySelector(`[data-id="${id}"]`)?.click();
+      });
+      setInterval(load, 60000); // pick up new messages automatically
+    });
+  </script>
+</body>
+</html>
