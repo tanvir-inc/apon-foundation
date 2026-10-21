@@ -83,6 +83,21 @@ function renderMarkdown(src) {
   return out.join('');
 }
 
+// Admin: unread-message badge in the nav (and the stat card on admin.html). Returns a refresh function.
+function watchUnread() {
+  const run = async () => {
+    try {
+      const { unread } = await api('/admin/messages?summary=1');
+      const b = document.getElementById('msg-badge');
+      if (b) { b.textContent = unread; b.hidden = !unread; }
+      const s = document.getElementById('s-msg');
+      if (s) s.textContent = unread;
+    } catch {}
+  };
+  run(); setInterval(run, 60000);
+  return run;
+}
+
 const GOOGLE_ERRORS = {
   google: 'Google sign-in failed. Try again.',
   google_email: 'Your Google email is not verified.',
