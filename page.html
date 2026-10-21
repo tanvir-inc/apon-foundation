@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>APON Foundation</title>
+  <link rel="stylesheet" href="/auth.css">
+</head>
+<body>
+  <header class="top">
+    <a class="brand" href="/index.html">APON Foundation</a>
+    <div class="who"><a href="/index.html">Back to site</a></div>
+  </header>
+  <main style="max-width:760px">
+    <p id="draft" class="badge" hidden>Draft · only admins can see this</p>
+    <div class="page-head"><h1 id="title"></h1><a id="edit" href="/admin-pages.html" hidden>Edit page</a></div>
+    <article class="prose" id="content"><p class="muted">Loading…</p></article>
+  </main>
+  <script src="/auth.js"></script>
+  <script>
+    const slug = new URLSearchParams(location.search).get('slug') || decodeURIComponent(location.pathname.split('/').filter(Boolean).pop() || '');
+    api('/pages?slug=' + encodeURIComponent(slug))
+      .then(async ({ page }) => {
+        document.title = page.title + ' · APON Foundation';
+        document.getElementById('title').textContent = page.title;
+        document.getElementById('content').innerHTML = renderMarkdown(page.content);
+        document.getElementById('draft').hidden = page.published;
+        const u = await currentUser();
+        document.getElementById('edit').hidden = !(u && u.role === 'admin');
+      })
+      .catch((err) => {
+        document.getElementById('title').textContent = 'Page not found';
+        document.getElementById('content').innerHTML = '<p class="muted">' + esc(err.message) + '</p>';
+      });
+  </script>
+</body>
+</html>
