@@ -24,6 +24,10 @@
       <div class="panel"><div class="muted">Admins</div><div class="stat" id="s-admin">0</div></div>
       <div class="panel"><div class="muted">Members</div><div class="stat" id="s-user">0</div></div>
       <a class="panel" href="admin-messages.html" style="text-decoration:none;color:inherit"><div class="muted">Unread messages</div><div class="stat" id="s-msg">0</div></a>
+      <section class="panel">
+  <div class="page-head"><h2 style="margin:0;font-size:1.1rem">Latest messages</h2><a href="admin-messages.html">Open inbox</a></div>
+  <div id="latest" class="muted" style="margin-top:.75rem">Loading…</div>
+</section>
     </div>
 
     <section class="panel">
@@ -119,7 +123,17 @@
     });
 
     $('logout').onclick = logout;
-    guard('admin').then((u) => { if (!u) return; $('who').textContent = u.email; $('app').hidden = false; load(); });
+    async function loadLatest() {
+  try {
+    const { messages } = await api('/admin/messages');
+    $('latest').innerHTML = messages.length
+      ? messages.slice(0, 5).map((m) => `<a class="msg-item ${m.is_read ? '' : 'unread'}" href="admin-messages.html#${m.id}" style="display:block;text-decoration:none;color:inherit">
+          <span class="from">${m.is_read ? '' : '<span class="dot"></span>'}${esc(m.name)}</span>
+          <span class="muted"> · ${esc(m.subject || '(no subject)')} · ${fmtDate(m.created_at)}</span></a>`).join('')
+      : 'No messages yet.';
+  } catch (err) { $('latest').textContent = err.message; }
+}
+    guard('admin').then((u) => { if (!u) return; $('who').textContent = u.email; $('app').hidden = false; load(); watchUnread(); loadLatest(); });
   </script>
 </body>
 </html>
