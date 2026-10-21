@@ -5,110 +5,362 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Pages · Admin · APON Foundation</title>
   <link rel="stylesheet" href="auth.css">
-  <link rel="icon" type="image/x-icon" href="assets/admin.png">
 </head>
 <body>
   <header class="top">
     <a class="brand" href="index.html">APON Foundation · Admin</a>
-    <nav><a href="admin.html">Accounts</a><a href="admin-pages.html" aria-current="page">Pages</a></nav>
+    <nav>
+      <a href="admin.html">Accounts</a>
+      <a href="admin-pages.html" aria-current="page">Pages</a>
+      <a href="admin-messages.html">Messages <span class="count" id="msg-badge" hidden></span></a>
+    </nav>
     <div class="who"><span id="who"></span><button id="logout">Log out</button></div>
   </header>
-  <main hidden id="app">
-    <div class="page-head"><h1>Pages</h1><button class="solid" id="new">New page</button></div>
 
-    <section class="panel" style="margin-top:1rem">
-      <p class="msg" id="list-msg" role="alert"></p>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Title</th><th>URL</th><th>Status</th><th>In nav</th><th>Updated</th><th>Actions</th></tr></thead>
-          <tbody id="rows"></tbody>
-        </table>
+  <main hidden id="app" style="max-width:1200px">
+    <!-- ============ LIST VIEW ============ -->
+    <section id="list-view">
+      <div class="page-head"><h1>Pages</h1><button class="solid" id="new">+ New page</button></div>
+      <div class="panel" style="margin-top:1rem">
+        <div class="form-row" style="margin-bottom:1rem">
+          <div><label for="q" style="margin-top:0">Search</label><input id="q" type="search" placeholder="Search by title or URL"></div>
+          <div class="chips" id="chips">
+            <button class="chip" data-f="all" aria-pressed="true">All</button>
+            <button class="chip" data-f="published" aria-pressed="false">Published</button>
+            <button class="chip" data-f="draft" aria-pressed="false">Drafts</button>
+          </div>
+        </div>
+        <p class="msg" id="list-msg" role="alert"></p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Title</th><th>URL</th><th>Status</th><th>In menu</th><th>Updated</th><th>Actions</th></tr></thead>
+            <tbody id="rows"></tbody>
+          </table>
+        </div>
+        <p class="muted" id="empty" hidden>No pages found. Select "New page" to write one.</p>
       </div>
-      <p class="muted" id="empty" hidden>No pages yet. Select "New page" to write one.</p>
     </section>
 
-    <section class="panel" id="editor-panel">
-      <h2 id="editor-title" style="margin-top:0;font-size:1.1rem">New page</h2>
-      <form id="editor">
-        <div class="form-row">
-          <div><label for="title">Title</label><input id="title" required></div>
-          <div><label for="slug">URL slug (optional)</label><input id="slug" placeholder="made from the title if empty"></div>
+    <!-- ============ EDITOR VIEW ============ -->
+    <section id="editor-view" hidden>
+      <div class="page-head">
+        <button id="back">← All pages</button>
+        <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap">
+          <span class="muted" id="state"></span>
+          <a id="view-link" href="#" target="_blank" rel="noopener" hidden>View page</a>
+          <button class="solid" id="save">Save changes</button>
         </div>
-        <div class="editor-grid">
-          <div>
-            <label for="content">Content (Markdown)</label>
-            <textarea id="content" rows="16" placeholder="# Heading&#10;&#10;A paragraph with **bold**, *italic* and a [link](https://example.com).&#10;&#10;- List item&#10;&#10;![Image](/assets/apon_logo.jpeg)"></textarea>
+      </div>
+
+      <div class="editor-layout" style="margin-top:1rem">
+        <div>
+          <input class="title-input" id="title" placeholder="Page title" aria-label="Page title" autocomplete="off">
+
+          <div id="tpl" class="chips" style="margin:.75rem 0" hidden>
+            <span class="muted" style="align-self:center">Start from:</span>
+            <button class="chip" data-t="blank">Blank</button>
+            <button class="chip" data-t="about">About us</button>
+            <button class="chip" data-t="project">Project</button>
+            <button class="chip" data-t="notice">Announcement</button>
           </div>
-          <div><label>Preview</label><div class="box prose" id="preview"></div></div>
+
+          <div class="toolbar" id="toolbar" style="margin-top:.75rem">
+            <button type="button" data-cmd="bold" title="Bold (Ctrl+B)"><b>B</b></button>
+            <button type="button" data-cmd="italic" title="Italic (Ctrl+I)"><i>I</i></button>
+            <button type="button" data-cmd="h2" title="Heading">H2</button>
+            <button type="button" data-cmd="h3" title="Subheading">H3</button>
+            <button type="button" data-cmd="ul" title="Bulleted list">• List</button>
+            <button type="button" data-cmd="ol" title="Numbered list">1. List</button>
+            <button type="button" data-cmd="quote" title="Quote">Quote</button>
+            <button type="button" data-cmd="link" title="Link">Link</button>
+            <button type="button" data-cmd="image" title="Insert image">Image</button>
+            <button type="button" data-cmd="hr" title="Divider line">Divider</button>
+            <span class="modes" id="modes">
+              <button type="button" data-mode="write" aria-pressed="false">Write</button>
+              <button type="button" data-mode="split" aria-pressed="true">Split</button>
+              <button type="button" data-mode="preview" aria-pressed="false">Preview</button>
+            </span>
+          </div>
+          <div class="panes" id="panes" data-mode="split">
+            <div class="write-col">
+              <textarea id="content" rows="22" aria-label="Page content" placeholder="Start writing… Use the toolbar above, or type Markdown."></textarea>
+            </div>
+            <div class="preview-col"><div class="box prose" id="preview" style="min-height:30rem"></div></div>
+          </div>
+          <p class="hint" id="stats"></p>
         </div>
-        <label class="check"><input type="checkbox" id="published"> Published (visible to everyone)</label>
-        <label class="check"><input type="checkbox" id="show_in_nav"> Show in the site navigation (when published)</label>
-        <p class="msg" id="form-msg" role="status"></p>
-        <button class="primary" style="max-width:220px" type="submit">Save page</button>
-      </form>
+
+        <aside class="side">
+          <div class="panel">
+            <label for="status" style="margin-top:0">Status</label>
+            <select id="status"><option value="draft">Draft (only admins can see it)</option><option value="published">Published (visible to everyone)</option></select>
+          </div>
+          <div class="panel">
+            <label class="check" style="margin-top:0"><input type="checkbox" id="show_in_nav"> Show in the site menu</label>
+            <label for="nav_order">Menu position (lower comes first)</label>
+            <input id="nav_order" type="number" min="0" max="999" value="0">
+          </div>
+          <div class="panel">
+            <label for="slug" style="margin-top:0">Page address</label>
+            <input id="slug" placeholder="auto from title" autocomplete="off">
+            <p class="hint">Visitors open it at <b id="url-preview">/p/…</b></p>
+          </div>
+          <div class="panel">
+            <label for="meta" style="margin-top:0">Short description (for Google and sharing)</label>
+            <textarea id="meta" rows="3" maxlength="300" style="font-family:inherit"></textarea>
+            <p class="hint" id="meta-count">0 / 160 recommended</p>
+          </div>
+          <div class="panel">
+            <label style="margin-top:0">Cover image</label>
+            <div class="cover" id="cover">No image</div>
+            <div class="row-actions" style="margin-top:.6rem">
+              <button type="button" id="cover-pick">Choose image</button>
+              <button type="button" id="cover-clear">Remove</button>
+            </div>
+          </div>
+          <button class="danger" id="delete" style="width:100%" hidden>Delete this page</button>
+        </aside>
+      </div>
     </section>
   </main>
+
+  <!-- ============ IMAGE LIBRARY ============ -->
+  <dialog id="media-dialog">
+    <div class="page-head">
+      <h2 style="margin:0;font-size:1.1rem">Images</h2>
+      <button id="media-close">Close</button>
+    </div>
+    <p class="hint">Upload a picture, then select it to use it. Large photos are resized automatically.</p>
+    <input type="file" id="file" accept="image/*" multiple style="margin-top:.75rem">
+    <p class="msg" id="media-msg" role="alert"></p>
+    <div class="media-grid" id="media-grid"></div>
+  </dialog>
+
   <script src="auth.js"></script>
   <script>
     const $ = (id) => document.getElementById(id);
-    let pages = [], editingId = null;
+    const ta = $('content');
+    const slugify = (s) => String(s || '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    const blank = () => ({ id: null, title: '', slug: '', content: '', meta_description: '', cover_image: '', nav_order: 0, published: false, show_in_nav: false });
 
-    function edit(p) {
-      editingId = p ? p.id : null;
-      $('editor-title').textContent = p ? 'Edit page: ' + p.title : 'New page';
-      $('title').value = p ? p.title : '';
-      $('slug').value = p ? p.slug : '';
-      $('content').value = p ? p.content : '';
-      $('published').checked = p ? p.published : false;
-      $('show_in_nav').checked = p ? p.show_in_nav : false;
-      $('form-msg').textContent = '';
-      preview();
+    const TEMPLATES = {
+      blank: { title: '', content: '' },
+      about: { title: 'About us', content: '# About us\n\nTell visitors who you are and why you exist.\n\n## Our mission\n\nWrite your mission here.\n\n## Our story\n\nShare how it all began.\n\n- First key fact\n- Second key fact\n' },
+      project: { title: 'Our project', content: '# Project name\n\nOne sentence that explains what this project does.\n\n## The challenge\n\nDescribe the problem the project responds to.\n\n## What we do\n\n- Activity one\n- Activity two\n- Activity three\n\n## Results\n\nShare what has been achieved so far.\n' },
+      notice: { title: 'Announcement', content: '# Announcement title\n\n**Date:** \n\nWrite the news here in a few short paragraphs.\n\n> Add a quote or key message here.\n\n---\n\nFor more information, please get in touch.\n' },
+    };
+
+    let pages = [], cur = blank(), dirty = false, filter = 'all', pick = null, refreshBadge = () => {};
+
+    /* ---------- helpers ---------- */
+    function toast(text, err) {
+      const t = document.createElement('div');
+      t.className = 'toast' + (err ? ' err' : ''); t.setAttribute('role', 'status'); t.textContent = text;
+      document.body.appendChild(t); setTimeout(() => t.remove(), 2600);
     }
-    const preview = () => { $('preview').innerHTML = renderMarkdown($('content').value) || '<p class="muted">Nothing to preview yet.</p>'; };
+    function setDirty(v) {
+      dirty = v;
+      $('state').textContent = v ? 'Unsaved changes' : (cur.id ? 'All changes saved' : '');
+    }
+    function show(view) {
+      $('list-view').hidden = view !== 'list';
+      $('editor-view').hidden = view !== 'editor';
+      window.scrollTo(0, 0);
+    }
+    const fire = () => ta.dispatchEvent(new Event('input', { bubbles: true }));
 
-    async function load() {
+    /* ---------- editor state <-> form ---------- */
+    function fill(p) {
+      cur = p;
+      $('title').value = p.title; $('slug').value = p.slug; ta.value = p.content;
+      $('meta').value = p.meta_description; $('nav_order').value = p.nav_order;
+      $('status').value = p.published ? 'published' : 'draft';
+      $('show_in_nav').checked = p.show_in_nav;
+      $('tpl').hidden = !!(p.id || p.content);
+      $('delete').hidden = !p.id;
+      refresh(); setDirty(false);
+    }
+    function readForm() {
+      cur.title = $('title').value; cur.slug = $('slug').value; cur.content = ta.value;
+      cur.meta_description = $('meta').value; cur.nav_order = Number($('nav_order').value) || 0;
+      cur.published = $('status').value === 'published'; cur.show_in_nav = $('show_in_nav').checked;
+    }
+    function refresh() {
+      $('preview').innerHTML = renderMarkdown(ta.value) || '<p class="muted">Your page preview appears here as you write.</p>';
+      const words = ta.value.trim() ? ta.value.trim().split(/\s+/).length : 0;
+      $('stats').textContent = `${words} words · about ${Math.max(1, Math.ceil(words / 200))} min read`;
+      const len = $('meta').value.length;
+      $('meta-count').textContent = `${len} / 160 recommended`;
+      const slug = slugify($('slug').value || $('title').value) || '…';
+      $('slug').placeholder = slugify($('title').value) || 'auto from title';
+      $('url-preview').textContent = '/p/' + slug;
+      const link = $('view-link');
+      link.hidden = !cur.id; if (cur.id) link.href = '/p/' + encodeURIComponent(cur.slug);
+      $('cover').innerHTML = cur.cover_image ? `<img src="${esc(cur.cover_image)}" alt="Cover image">` : 'No image';
+    }
+
+    $('editor-view').addEventListener('input', () => { readForm(); refresh(); setDirty(true); });
+    window.addEventListener('beforeunload', (e) => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+
+    /* ---------- toolbar ---------- */
+    function wrap(before, after = before, placeholder = 'text') {
+      const s = ta.selectionStart, e = ta.selectionEnd;
+      const sel = ta.value.slice(s, e) || placeholder;
+      ta.setRangeText(before + sel + after, s, e, 'end');
+      ta.focus(); ta.setSelectionRange(s + before.length, s + before.length + sel.length); fire();
+    }
+    function prefix(p) {
+      const v = ta.value, s = ta.selectionStart, e = ta.selectionEnd;
+      const start = s > 0 ? v.lastIndexOf('\n', s - 1) + 1 : 0;
+      let end = v.indexOf('\n', e); if (end < 0) end = v.length;
+      const block = v.slice(start, end).split('\n').map((l, i) => p.replace('{n}', i + 1) + l).join('\n');
+      ta.setRangeText(block, start, end, 'select'); ta.focus(); fire();
+    }
+    function insert(text) { ta.setRangeText(text, ta.selectionStart, ta.selectionEnd, 'end'); ta.focus(); fire(); }
+
+    const CMD = {
+      bold: () => wrap('**'), italic: () => wrap('*'),
+      h2: () => prefix('## '), h3: () => prefix('### '),
+      ul: () => prefix('- '), ol: () => prefix('{n}. '), quote: () => prefix('> '),
+      link: () => { const u = prompt('Link address (for example https://example.com)'); if (u) wrap('[', `](${u})`, 'link text'); },
+      image: () => openMedia((url) => insert(`\n\n![Describe the image](${url})\n\n`)),
+      hr: () => insert('\n\n---\n\n'),
+    };
+    $('toolbar').addEventListener('click', (e) => {
+      const b = e.target.closest('button'); if (!b) return;
+      if (b.dataset.cmd) CMD[b.dataset.cmd]();
+      if (b.dataset.mode) {
+        $('panes').dataset.mode = b.dataset.mode;
+        document.querySelectorAll('#modes button').forEach((x) => x.setAttribute('aria-pressed', x === b));
+      }
+    });
+    ta.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') { e.preventDefault(); CMD.bold(); }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'i') { e.preventDefault(); CMD.italic(); }
+    });
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's' && !$('editor-view').hidden) { e.preventDefault(); save(); }
+    });
+
+    $('tpl').addEventListener('click', (e) => {
+      const t = TEMPLATES[e.target.dataset.t]; if (!t) return;
+      $('title').value = t.title; ta.value = t.content; readForm(); refresh(); setDirty(true); $('tpl').hidden = true;
+    });
+
+    /* ---------- save / delete ---------- */
+    async function save() {
+      readForm();
+      if (!cur.title.trim()) { toast('Enter a page title first.', true); $('title').focus(); return; }
+      $('save').disabled = true;
       try {
-        pages = (await api('/admin/pages')).pages;
-        $('empty').hidden = pages.length > 0;
-        $('rows').innerHTML = pages.map((p) => `<tr data-id="${p.id}">
-          <td>${esc(p.title)}</td>
-          <td><a href="/p/${encodeURIComponent(p.slug)}" target="_blank" rel="noopener">/p/${esc(p.slug)}</a></td>
-          <td>${p.published ? '<span class="badge">Published</span>' : '<span class="muted">Draft</span>'}</td>
-          <td>${p.show_in_nav ? 'Yes' : 'No'}</td>
-          <td>${fmtDate(p.updated_at)}</td>
-          <td><div class="row-actions">
-            <button data-act="edit">Edit</button>
-            <button data-act="delete" class="danger">Delete</button>
-          </div></td></tr>`).join('');
-      } catch (err) { $('list-msg').textContent = err.message; }
+        const { page } = await api('/admin/pages', { method: cur.id ? 'PATCH' : 'POST', body: cur });
+        fill(page); toast(page.published ? 'Saved and published' : 'Saved as draft'); load();
+      } catch (err) { toast(err.message, true); }
+      finally { $('save').disabled = false; }
     }
+    $('save').onclick = save;
+    $('back').onclick = () => { if (dirty && !confirm('You have unsaved changes. Leave without saving?')) return; setDirty(false); show('list'); };
+    $('delete').onclick = async () => {
+      if (!confirm(`Delete "${cur.title}"? This cannot be undone.`)) return;
+      try { await api('/admin/pages?id=' + cur.id, { method: 'DELETE' }); setDirty(false); toast('Page deleted'); show('list'); load(); }
+      catch (err) { toast(err.message, true); }
+    };
 
+    /* ---------- list ---------- */
+    function renderList() {
+      const q = $('q').value.trim().toLowerCase();
+      const items = pages.filter((p) =>
+        (filter === 'all' || (filter === 'published') === p.published) &&
+        (!q || p.title.toLowerCase().includes(q) || p.slug.includes(q)));
+      $('empty').hidden = items.length > 0;
+      $('rows').innerHTML = items.map((p) => `<tr data-id="${p.id}">
+        <td><b>${esc(p.title)}</b></td>
+        <td><a href="/p/${encodeURIComponent(p.slug)}" target="_blank" rel="noopener">/p/${esc(p.slug)}</a></td>
+        <td>${p.published ? '<span class="badge">Published</span>' : '<span class="muted">Draft</span>'}</td>
+        <td>${p.show_in_nav ? 'Yes (#' + p.nav_order + ')' : 'No'}</td>
+        <td>${fmtDate(p.updated_at)}</td>
+        <td><div class="row-actions">
+          <button data-act="edit">Edit</button>
+          <button data-act="dup">Duplicate</button>
+          <button data-act="delete" class="danger">Delete</button>
+        </div></td></tr>`).join('');
+    }
+    async function load() {
+      try { pages = (await api('/admin/pages')).pages; renderList(); }
+      catch (err) { $('list-msg').textContent = err.message; }
+    }
+    $('q').addEventListener('input', renderList);
+    $('chips').addEventListener('click', (e) => {
+      const f = e.target.dataset.f; if (!f) return;
+      filter = f; document.querySelectorAll('#chips .chip').forEach((c) => c.setAttribute('aria-pressed', c.dataset.f === f)); renderList();
+    });
+    $('new').onclick = () => { fill(blank()); show('editor'); $('title').focus(); };
     $('rows').addEventListener('click', async (e) => {
       const act = e.target.dataset.act; if (!act) return;
       const p = pages.find((x) => x.id === Number(e.target.closest('tr').dataset.id));
-      if (act === 'edit') { edit(p); $('editor-panel').scrollIntoView({ behavior: 'smooth' }); }
+      if (act === 'edit') { fill({ ...p }); show('editor'); }
+      if (act === 'dup') { fill({ ...p, id: null, title: p.title + ' (copy)', slug: '', published: false, show_in_nav: false }); show('editor'); setDirty(true); }
       if (act === 'delete' && confirm(`Delete "${p.title}"? This cannot be undone.`)) {
-        try { await api('/admin/pages?id=' + p.id, { method: 'DELETE' }); if (editingId === p.id) edit(null); load(); }
+        try { await api('/admin/pages?id=' + p.id, { method: 'DELETE' }); toast('Page deleted'); load(); }
         catch (err) { $('list-msg').textContent = err.message; }
       }
     });
 
-    $('new').onclick = () => { edit(null); $('editor-panel').scrollIntoView({ behavior: 'smooth' }); $('title').focus(); };
-    $('content').addEventListener('input', preview);
-
-    $('editor').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const msg = $('form-msg');
-      const body = { id: editingId, title: $('title').value, slug: $('slug').value, content: $('content').value,
-                     published: $('published').checked, show_in_nav: $('show_in_nav').checked };
+    /* ---------- image library ---------- */
+    function openMedia(cb) { pick = cb; $('media-msg').textContent = ''; $('media-dialog').showModal(); loadMedia(); }
+    async function loadMedia() {
       try {
-        const { page } = await api('/admin/pages', { method: editingId ? 'PATCH' : 'POST', body });
-        edit(page); msg.className = 'msg ok'; msg.textContent = 'Saved.'; load();
+        const { media } = await api('/admin/media');
+        $('media-grid').innerHTML = media.length ? media.map((m) => `<div class="thumb">
+          <button type="button" data-use="${m.id}" title="${esc(m.filename)}"><img loading="lazy" src="/api/media?id=${m.id}" alt="${esc(m.filename)}"></button>
+          <button type="button" class="x" data-del="${m.id}" aria-label="Delete ${esc(m.filename)}">×</button></div>`).join('')
+          : '<p class="muted">No images yet. Upload your first one above.</p>';
+      } catch (err) { $('media-msg').textContent = err.message; }
+    }
+    $('media-grid').addEventListener('click', async (e) => {
+      const use = e.target.closest('[data-use]'), del = e.target.closest('[data-del]');
+      if (use && pick) { pick('/api/media?id=' + use.dataset.use); $('media-dialog').close(); }
+      if (del && confirm('Delete this image? Pages that use it will show a broken image.')) {
+        try { await api('/admin/media?id=' + del.dataset.del, { method: 'DELETE' }); loadMedia(); }
+        catch (err) { $('media-msg').textContent = err.message; }
+      }
+    });
+    $('media-close').onclick = () => $('media-dialog').close();
+
+    async function toBase64(file) {
+      if (file.type === 'image/gif') {
+        if (file.size > 2 * 1024 * 1024) throw new Error('GIF files must be under 2 MB.');
+        return { mime: 'image/gif', data: await new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(r.result.split(',')[1]); r.onerror = no; r.readAsDataURL(file); }) };
+      }
+      const bmp = await createImageBitmap(file);
+      const scale = Math.min(1, 1600 / bmp.width);
+      const c = document.createElement('canvas');
+      c.width = Math.round(bmp.width * scale); c.height = Math.round(bmp.height * scale);
+      const ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height); ctx.drawImage(bmp, 0, 0, c.width, c.height);
+      return { mime: 'image/jpeg', data: c.toDataURL('image/jpeg', 0.85).split(',')[1] };
+    }
+    $('file').addEventListener('change', async (e) => {
+      const msg = $('media-msg'); msg.className = 'msg'; msg.textContent = 'Uploading…';
+      try {
+        for (const f of e.target.files) {
+          if (!f.type.startsWith('image/')) throw new Error(`${f.name} is not an image.`);
+          const { mime, data } = await toBase64(f);
+          await api('/admin/media', { method: 'POST', body: { filename: f.name, mime, data } });
+        }
+        msg.className = 'msg ok'; msg.textContent = 'Uploaded.'; e.target.value = ''; loadMedia();
       } catch (err) { msg.className = 'msg'; msg.textContent = err.message; }
     });
 
+    $('cover-pick').onclick = () => openMedia((url) => { cur.cover_image = url; refresh(); setDirty(true); });
+    $('cover-clear').onclick = () => { cur.cover_image = ''; refresh(); setDirty(true); };
+
+    /* ---------- start ---------- */
     $('logout').onclick = logout;
-    guard('admin').then((u) => { if (!u) return; $('who').textContent = u.email; $('app').hidden = false; edit(null); load(); });
+    guard('admin').then((u) => {
+      if (!u) return;
+      $('who').textContent = u.email; $('app').hidden = false;
+      refreshBadge = watchUnread(); load();
+    });
   </script>
 </body>
 </html>
