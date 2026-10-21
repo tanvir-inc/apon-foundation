@@ -59,21 +59,23 @@ function bindAuthForm(form, endpoint) {
   });
 }
 
-// Small, safe Markdown renderer (input is HTML-escaped first, links limited to http/https/mailto/relative)
 function renderMarkdown(src) {
   const inline = (s) => esc(s)
     .replace(/!\[([^\]]*)\]\((https?:\/\/[^)\s]+|\/[^)\s]*)\)/g, '<img src="$2" alt="$1">')
     .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (m, t, u) => (/^(https?:\/\/|mailto:|\/|#)/.test(u) ? `<a href="${u}">${t}</a>` : m))
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.+?)\*/g, '<em>$1</em>');
-  const out = []; let para = [], list = false;
+  const out = []; let para = [], list = null;
   const flush = () => { if (para.length) { out.push('<p>' + para.map(inline).join('<br>') + '</p>'); para = []; } };
-  const close = () => { if (list) { out.push('</ul>'); list = false; } };
+  const close = () => { if (list) { out.push(`</${list}>`); list = null; } };
+  const open = (t) => { if (list !== t) { close(); out.push(`<${t}>`); list = t; } };
   for (const raw of String(src).split('\n')) {
     const line = raw.trimEnd(); let m;
     if (!line.trim()) { flush(); close(); }
+    else if (/^(-{3,}|\*{3,})$/.test(line.trim())) { flush(); close(); out.push('<hr>'); }
     else if ((m = line.match(/^(#{1,3})\s+(.*)/))) { flush(); close(); out.push(`<h${m[1].length}>${inline(m[2])}</h${m[1].length}>`); }
-    else if ((m = line.match(/^[-*]\s+(.*)/))) { flush(); if (!list) { out.push('<ul>'); list = true; } out.push('<li>' + inline(m[1]) + '</li>'); }
+    else if ((m = line.match(/^[-*]\s+(.*)/))) { flush(); open('ul'); out.push('<li>' + inline(m[1]) + '</li>'); }
+    else if ((m = line.match(/^\d+\.\s+(.*)/))) { flush(); open('ol'); out.push('<li>' + inline(m[1]) + '</li>'); }
     else if ((m = line.match(/^>\s?(.*)/))) { flush(); close(); out.push('<blockquote>' + inline(m[1]) + '</blockquote>'); }
     else { close(); para.push(line); }
   }
