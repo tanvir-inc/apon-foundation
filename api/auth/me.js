@@ -3,7 +3,9 @@ import { getUser } from '../_lib/auth.js';
 
 export default async function handler(req, res) {
   const user = await getUser(req);
-  if (!user) return res.status(401).json({ error: 'Not logged in.' });
+  if (!user) {
+  return req.method === 'GET' ? res.json({ user: null }) : res.status(401).json({ error: 'Not logged in.' });
+}
 
   if (req.method === 'PATCH') {
     const name = String(req.body?.name || '').trim();
