@@ -13,30 +13,15 @@
   </header>
   <main style="max-width:760px">
     <p id="draft" class="badge" hidden>Draft · only admins can see this</p>
-    <img id="cover" class="cover-img" alt="" hidden>
     <div class="page-head"><h1 id="title"></h1><a id="edit" href="/admin-pages.html" hidden>Edit page</a></div>
     <article class="prose" id="content"><p class="muted">Loading…</p></article>
   </main>
   <script src="/auth.js"></script>
   <script>
     const slug = new URLSearchParams(location.search).get('slug') || decodeURIComponent(location.pathname.split('/').filter(Boolean).pop() || '');
-    function setMeta(attr, key, value) {
-      if (!value) return;
-      let el = document.head.querySelector(`meta[${attr}="${key}"]`);
-      if (!el) { el = document.createElement('meta'); el.setAttribute(attr, key); document.head.appendChild(el); }
-      el.setAttribute('content', value);
-    }
     api('/pages?slug=' + encodeURIComponent(slug))
       .then(async ({ page }) => {
         document.title = page.title + ' · APON Foundation';
-        setMeta('name', 'description', page.meta_description);
-        setMeta('property', 'og:title', page.title);
-        setMeta('property', 'og:description', page.meta_description);
-        if (page.cover_image) {
-          const img = document.getElementById('cover');
-          img.src = page.cover_image; img.hidden = false;
-          setMeta('property', 'og:image', new URL(page.cover_image, location.origin).href);
-        }
         document.getElementById('title').textContent = page.title;
         document.getElementById('content').innerHTML = renderMarkdown(page.content);
         document.getElementById('draft').hidden = page.published;
