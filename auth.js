@@ -59,46 +59,29 @@ function bindAuthForm(form, endpoint) {
   });
 }
 
+const GOOGLE_ERRORS = {
+  google: 'Google sign-in failed. Try again.',
+  google_email: 'Your Google email is not verified.',
+};
+
+// Small, safe Markdown renderer (input is HTML-escaped first, links limited to http/https/mailto/relative)
 function renderMarkdown(src) {
   const inline = (s) => esc(s)
     .replace(/!\[([^\]]*)\]\((https?:\/\/[^)\s]+|\/[^)\s]*)\)/g, '<img src="$2" alt="$1">')
     .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (m, t, u) => (/^(https?:\/\/|mailto:|\/|#)/.test(u) ? `<a href="${u}">${t}</a>` : m))
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.+?)\*/g, '<em>$1</em>');
-  const out = []; let para = [], list = null;
+  const out = []; let para = [], list = false;
   const flush = () => { if (para.length) { out.push('<p>' + para.map(inline).join('<br>') + '</p>'); para = []; } };
-  const close = () => { if (list) { out.push(`</${list}>`); list = null; } };
-  const open = (t) => { if (list !== t) { close(); out.push(`<${t}>`); list = t; } };
+  const close = () => { if (list) { out.push('</ul>'); list = false; } };
   for (const raw of String(src).split('\n')) {
     const line = raw.trimEnd(); let m;
     if (!line.trim()) { flush(); close(); }
-    else if (/^(-{3,}|\*{3,})$/.test(line.trim())) { flush(); close(); out.push('<hr>'); }
     else if ((m = line.match(/^(#{1,3})\s+(.*)/))) { flush(); close(); out.push(`<h${m[1].length}>${inline(m[2])}</h${m[1].length}>`); }
-    else if ((m = line.match(/^[-*]\s+(.*)/))) { flush(); open('ul'); out.push('<li>' + inline(m[1]) + '</li>'); }
-    else if ((m = line.match(/^\d+\.\s+(.*)/))) { flush(); open('ol'); out.push('<li>' + inline(m[1]) + '</li>'); }
+    else if ((m = line.match(/^[-*]\s+(.*)/))) { flush(); if (!list) { out.push('<ul>'); list = true; } out.push('<li>' + inline(m[1]) + '</li>'); }
     else if ((m = line.match(/^>\s?(.*)/))) { flush(); close(); out.push('<blockquote>' + inline(m[1]) + '</blockquote>'); }
     else { close(); para.push(line); }
   }
   flush(); close();
   return out.join('');
 }
-
-// Admin: unread-message badge in the nav (and the stat card on admin.html). Returns a refresh function.
-function watchUnread() {
-  const run = async () => {
-    try {
-      const { unread } = await api('/admin/messages?summary=1');
-      const b = document.getElementById('msg-badge');
-      if (b) { b.textContent = unread; b.hidden = !unread; }
-      const s = document.getElementById('s-msg');
-      if (s) s.textContent = unread;
-    } catch {}
-  };
-  run(); setInterval(run, 60000);
-  return run;
-}
-
-const GOOGLE_ERRORS = {
-  google: 'Google sign-in failed. Try again.',
-  google_email: 'Your Google email is not verified.',
-};
