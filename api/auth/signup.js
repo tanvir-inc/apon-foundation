@@ -5,13 +5,14 @@ import { setSession, roleFor, validEmail } from '../_lib/auth.js';
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   try {
-    const { name = '', email = '', password = '' } = req.body || {};
+    const { name = '', email = '', password = '', confirmPassword = '' } = req.body || {};
     const n = String(name).trim();
     const e = String(email).trim().toLowerCase();
     if (!n) return res.status(400).json({ error: 'Enter your name.' });
     if (!validEmail(e)) return res.status(400).json({ error: 'Enter a valid email address.' });
     if (String(password).length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters.' });
 
+    if (password !== confirmPassword) return res.status(400).json({ error: 'Passwords do not match.' });
     const hash = await bcrypt.hash(password, 10);
     const rows = await sql`
       INSERT INTO users (name, email, password_hash, role)
