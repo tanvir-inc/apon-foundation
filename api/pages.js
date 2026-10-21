@@ -8,9 +8,7 @@ export default async function handler(req, res) {
   try {
     const slug = req.query.slug;
     if (slug) {
-      const rows = await sql`
-        SELECT slug, title, content, meta_description, cover_image, published, updated_at
-        FROM pages WHERE slug = ${String(slug)}`;
+      const rows = await sql`SELECT slug, title, content, published, updated_at FROM pages WHERE slug = ${String(slug)}`;
       const page = rows[0];
       const user = page && !page.published ? await getUser(req) : null;
       if (!page || (!page.published && user?.role !== 'admin')) {
@@ -18,9 +16,7 @@ export default async function handler(req, res) {
       }
       return res.json({ page });
     }
-    const pages = await sql`
-      SELECT slug, title FROM pages
-      WHERE published AND show_in_nav ORDER BY nav_order, created_at`;
+    const pages = await sql`SELECT slug, title FROM pages WHERE published AND show_in_nav ORDER BY created_at`;
     res.json({ pages });
   } catch (err) {
     console.error(err);
