@@ -42,15 +42,43 @@ function bindAuthForm(form, endpoint) {
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = form.querySelector('button.primary');
-    btn.disabled = true; msg.textContent = '';
+    const body = Object.fromEntries(new FormData(form));
+    msg.textContent = '';
+    if ('confirmPassword' in body && body.confirmPassword !== body.password) {
+      msg.textContent = 'Passwords do not match.';
+      return;
+    }
+    btn.disabled = true;
     try {
-      const { user } = await api(endpoint, { method: 'POST', body: Object.fromEntries(new FormData(form)) });
+      const { user } = await api(endpoint, { method: 'POST', body });
       location.href = homeFor(user);
     } catch (err) {
       msg.textContent = err.message;
       btn.disabled = false;
     }
   });
+}
+
+// Small, safe Markdown renderer (input is HTML-escaped first, links limited to http/https/mailto/relative)
+function renderMarkdown(src) {
+  const inline = (s) => esc(s)
+    .replace(/!\[([^\]]*)\]\((https?:\/\/[^)\s]+|\/[^)\s]*)\)/g, '<img src="$2" alt="$1">')
+    .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (m, t, u) => (/^(https?:\/\/|mailto:|\/|#)/.test(u) ? `<a href="${u}">${t}</a>` : m))
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>');
+  const out = []; let para = [], list = false;
+  const flush = () => { if (para.length) { out.push('<p>' + para.map(inline).join('<br>') + '</p>'); para = []; } };
+  const close = () => { if (list) { out.push('</ul>'); list = false; } };
+  for (const raw of String(src).split('\n')) {
+    const line = raw.trimEnd(); let m;
+    if (!line.trim()) { flush(); close(); }
+    else if ((m = line.match(/^(#{1,3})\s+(.*)/))) { flush(); close(); out.push(`<h${m[1].length}>${inline(m[2])}</h${m[1].length}>`); }
+    else if ((m = line.match(/^[-*]\s+(.*)/))) { flush(); if (!list) { out.push('<ul>'); list = true; } out.push('<li>' + inline(m[1]) + '</li>'); }
+    else if ((m = line.match(/^>\s?(.*)/))) { flush(); close(); out.push('<blockquote>' + inline(m[1]) + '</blockquote>'); }
+    else { close(); para.push(line); }
+  }
+  flush(); close();
+  return out.join('');
 }
 
 const GOOGLE_ERRORS = {
