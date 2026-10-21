@@ -39,3 +39,20 @@ td select{width:auto;padding:.35rem .5rem}
 .form-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.75rem;align-items:end}
 .form-row label{margin:0 0 .35rem}
 @media (prefers-reduced-motion:no-preference){button,.google{transition:border-color .15s,opacity .15s}}
+/* admin nav, editor, page content */
+.top nav{display:flex;gap:1.25rem}
+.top nav a{color:var(--muted);text-decoration:none}
+.top nav a:hover,.top nav a[aria-current]{color:var(--accent)}
+textarea{width:100%;padding:.7rem .8rem;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:8px;font:.92rem/1.55 ui-monospace,Menlo,Consolas,monospace;resize:vertical}
+textarea:focus{outline:2px solid var(--accent);outline-offset:2px}
+input[type=checkbox]{width:auto;margin-right:.55rem}
+label.check{display:flex;align-items:center;color:var(--text);margin:.75rem 0 0}
+button.solid{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+.editor-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem}
+@media (max-width:800px){.editor-grid{grid-template-columns:1fr}}
+.box{border:1px solid var(--line);border-radius:8px;padding:.8rem 1rem;min-height:12rem;background:var(--bg);overflow:auto}
+.prose{line-height:1.7}
+.prose h1{font-size:2rem;margin:1.2rem 0 .5rem}.prose h2{font-size:1.5rem;margin:1.2rem 0 .5rem}.prose h3{font-size:1.2rem;margin:1rem 0 .4rem}
+.prose p{margin:.8rem 0}.prose img{max-width:100%;border-radius:8px}
+.prose blockquote{border-left:3px solid var(--accent);margin:1rem 0;padding-left:1rem;color:var(--muted)}
+.page-head{display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap}
