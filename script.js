@@ -65,7 +65,7 @@
     const subject = encodeURIComponent(`[APON Foundation website] ${data.get('subject')}`);
     const body = encodeURIComponent(`Name: ${data.get('name')}\nEmail: ${data.get('email')}\n\n${data.get('message')}`);
     status.textContent = 'Opening your email app with the message prepared…';
-    window.location.href = `mailto:info@aponfoundation.org?subject=${subject}&body=${body}`;
+    window.location.href = `mailto:ttahsin451@gmail.com?subject=${subject}&body=${body}`;
   });
   document.getElementById('year').textContent = new Date().getFullYear();
 })();
